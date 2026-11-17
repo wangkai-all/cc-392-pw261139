@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offset Lab — source-anchored citations</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    <strong>Offset&nbsp;Lab</strong>
+    <span class="muted">immutable sources · versioned cleaning · pinned citations</span>
+  </div>
+  <nav id="tabs">
+    <button data-tab="sources" class="active">1 · Sources</button>
+    <button data-tab="rules">2 · Rules</button>
+    <button data-tab="index">3 · Indexes</button>
+    <button data-tab="reports">4 · Reports</button>
+    <button data-tab="cost">5 · Storage cost</button>
+  </nav>
+</header>
+
+<main>
+  <p id="flash" class="flash" hidden></p>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section id="tab-sources" class="tab active">
+    <div class="grid two">
+      <div class="card">
+        <h2>Import a fictional document</h2>
+        <p class="hint">Bytes are stored once, content-addressed, and never rewritten. Every
+          upload of the same bytes reuses the same immutable revision.</p>
+        <label>Filename <input id="src-filename" value="虚构备忘录-第一版.txt"></label>
+        <label>Note <input id="src-note" placeholder="e.g. first draft"></label>
+        <label>File <input id="src-file" type="file" accept=".txt,.md,text/plain"></label>
+        <label>or paste text
+          <textarea id="src-text" rows="9">虚构文档 · 第一版
+
+　　项目代号「青苔」于春季启动，负责人是李明。
+内部编号：A-001。
+
+第二段包含全角空格和零宽字符：​这段文字之间藏着一个零宽空格。
+特殊符号：emoji 😀 与数学符号 𝔘𝔫𝔦𝔠𝔬𝔡𝔢。
+
+    最后一行以四个半角空格缩进，且末尾有空格。   </textarea>
+        </label>
+        <div class="row">
+          <button id="src-submit" class="primary">Store immutable revision</button>
+          <button id="src-example" class="ghost">Load CRLF + BOM sample</button>
+        </div>
+        <p class="hint tiny">The CRLF sample is generated client-side with <code>\r\n</code> line
+          endings and a UTF-8 BOM so byte and character offsets visibly diverge.</p>
+      </div>
+
+      <div class="card">
+        <h2>Documents <button id="src-refresh" class="ghost small">refresh</button></h2>
+        <div id="doc-list" class="list"></div>
+        <div id="revision-detail" class="detail"></div>
+      </div>
+    </div>
+
+    <div class="card" id="byte-vs-char">
+      <h2>Byte offsets vs character positions</h2>
+      <p class="hint">Ask intake for the same slice in two units. A multi-byte character is
+        several bytes but one character; a byte offset inside it is rejected on purpose.</p>
+      <div class="row">
+        <label class="inline">Revision <input id="slice-rev" placeholder="src_…"></label>
+        <label class="inline">Unit
+          <select id="slice-unit"><option value="char">char</option><option value="byte">byte</option></select>
+        </label>
+        <label class="inline">Start <input id="slice-start" type="number" value="0" min="0"></label>
+        <label class="inline">End <input id="slice-end" type="number" value="12" min="0"></label>
+        <button id="slice-go" class="primary small">Slice</button>
+        <button id="slice-probe" class="ghost small">Probe mid-character byte</button>
+      </div>
+      <pre id="slice-out" class="out"></pre>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section id="tab-rules" class="tab">
+    <div class="grid two">
+      <div class="card">
+        <h2>Create or revise a ruleset</h2>
+        <p class="hint">Editing rules creates a <em>new revision</em>. Existing indexes and
+          citations keep pointing at the revision they were built with.</p>
+        <label>Ruleset
+          <select id="rules-target"><option value="">— new ruleset —</option></select>
+        </label>
+        <label>Name <input id="rules-name" value="默认清洗"></label>
+        <div id="rules-list" class="rules"></div>
+        <div class="row">
+          <button id="rules-add" class="ghost small">+ add rule</button>
+          <button id="rules-save" class="primary">Save as new revision</button>
+        </div>
+        <pre id="rules-out" class="out"></pre>
+      </div>
+      <div class="card">
+        <h2>Ruleset revisions <button id="rules-refresh" class="ghost small">refresh</button></h2>
+        <div id="rulesets" class="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section id="tab-index" class="tab">
+    <div class="grid two">
+      <div class="card">
+        <h2>Build an index</h2>
+        <p class="hint">A build is staged and published atomically. If it is interrupted,
+          no partial index becomes visible; retry instead.</p>
+        <label>Source revision <input id="build-source" placeholder="src_…"></label>
+        <label>Ruleset revision
+          <select id="build-ruleset"></select>
+        </label>
+        <div class="row">
+          <button id="build-go" class="primary">Build index</button>
+          <button id="build-interrupt" class="danger small">Simulate interrupted rebuild</button>
+        </div>
+        <pre id="build-out" class="out"></pre>
+        <h3>Build jobs <button id="build-refresh" class="ghost small">refresh</button></h3>
+        <div id="jobs" class="list"></div>
+      </div>
+      <div class="card">
+        <h2>Indexes <button id="index-refresh" class="ghost small">refresh</button></h2>
+        <div id="indexes" class="list"></div>
+        <div id="index-detail" class="detail"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Paragraph index and old-reference behaviour</h2>
+      <div class="row">
+        <label class="inline">Index <input id="compare-index" placeholder="idx_…"></label>
+        <button id="compare-load" class="ghost small">Load paragraphs</button>
+      </div>
+      <div id="paragraphs" class="paragraphs"></div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section id="tab-reports" class="tab">
+    <div class="grid two">
+      <div class="card">
+        <h2>Write a report with citations</h2>
+        <p class="hint">A citation is resolved once, at creation, against a specific index.
+          It records source character offsets <em>and</em> source byte offsets.</p>
+        <label>Report title <input id="rep-title" value="春季项目分析草稿"></label>
+        <label>Index to cite <input id="rep-index" placeholder="idx_…"></label>
+        <label>Annotation note <input id="rep-note" value="关键信息"></label>
+        <label>Quote (must exist in the index's clean text)
+          <textarea id="rep-quote" rows="3">项目代号「青苔」于春季启动，负责人是李明。</textarea>
+        </label>
+        <div class="row">
+          <button id="rep-create" class="primary">Create report + pinned citation</button>
+          <button id="rep-autofill" class="ghost small">Use first paragraph as quote</button>
+        </div>
+        <pre id="rep-out" class="out"></pre>
+      </div>
+      <div class="card">
+        <h2>Reports <button id="rep-refresh" class="ghost small">refresh</button></h2>
+        <div id="reports" class="list"></div>
+        <div id="report-detail" class="detail"></div>
+      </div>
+    </div>
+    <div class="card" id="citation-card">
+      <h2>Citation inspector</h2>
+      <p class="hint">Click a citation in a report above. Reading shows the pinned positions
+        (cheap, no re-location). Comparison and re-anchoring are explicit buttons.</p>
+      <div class="row">
+        <label class="inline">Compare against index <input id="citation-target" placeholder="idx_…"></label>
+        <button id="citation-verify" class="ghost small">Verify pinned source</button>
+        <button id="citation-context" class="ghost small">Show pinned context</button>
+        <button id="citation-compare" class="primary small">Compare in other index</button>
+        <button id="citation-reanchor" class="danger small">Re-anchor (creates new citation)</button>
+      </div>
+      <pre id="citation-out" class="out"></pre>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section id="tab-cost" class="tab">
+    <div class="card">
+      <h2>Storage and read cost</h2>
+      <p class="hint">Both strategies are shown concretely: (A) keep the immutable source bytes and
+        store an offset mapping per index; (B) lock citations to the source revision they were
+        created against. Reading a report is a single SQLite row read + pinned offsets; comparing
+        across rulesets costs a scan of the target index's paragraph texts.</p>
+      <div class="row"><button id="cost-refresh" class="primary small">Measure</button></div>
+      <div id="cost" class="cost"></div>
+    </div>
+  </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
